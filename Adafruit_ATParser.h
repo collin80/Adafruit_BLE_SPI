@@ -67,11 +67,23 @@ enum
   AT_ARGTYPE_UINT8     = 0x0800,
 };
 
+void gotBLEReply();
+
+class BLEListener
+{
+public:
+    virtual void gotLine(char *txtLine);
+    virtual void cmdComplete(bool OK);
+};
+
 class Adafruit_ATParser : public Stream
 {
 protected:
   uint8_t _mode;
   bool     _verbose;
+  bool waitingForReply;
+  bool lastCommandOK;
+  BLEListener *listener;
 
   // internal function
   bool send_arg_get_resp(int32_t* reply, uint8_t argcount, uint16_t argtype[], uint32_t args[]);
@@ -80,6 +92,15 @@ public:
   Adafruit_ATParser(void);
 
   char buffer[BLE_BUFSIZE+1];
+  char replyBuffer[BLE_BUFSIZE+1];
+  int replyBuffIdx;
+  
+  bool isWaitingForReply();
+  bool isCmdOK();
+  static Adafruit_ATParser *getRef();
+  void bleReply();
+  boolean attachObj(BLEListener *listener);
+  void detachObj();
 
   uint8_t      getMode(void) { return _mode; }
   virtual bool setMode(uint8_t mode) = 0;
@@ -236,8 +257,16 @@ public:
     return readline( (char*) buf, bufsize, timeout, multiline );
   }
 
-  uint16_t readline(char    * buf, uint16_t bufsize) { return readline(buf, bufsize, _timeout, false); }
-  uint16_t readline(uint8_t * buf, uint16_t bufsize) { return readline(buf, bufsize, _timeout, false); }
+  uint16_t readline(char    * buf, uint16_t bufsize) 
+  { 
+      return readline(buf, bufsize, _timeout, false); 
+      
+  }
+  
+  uint16_t readline(uint8_t * buf, uint16_t bufsize) 
+  { 
+      return readline(buf, bufsize, _timeout, false);
+  }
 
   uint16_t readline(uint16_t timeout, boolean multiline = false)
   {
@@ -248,7 +277,6 @@ public:
   {
     return this->readline(this->buffer, BLE_BUFSIZE, _timeout, false);
   }
-
 
   // read one line and convert the string to integer number
   int32_t readline_parseInt(void);

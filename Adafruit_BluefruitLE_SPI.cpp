@@ -155,8 +155,8 @@ bool Adafruit_BluefruitLE_SPI::begin(boolean v)
     isOK= true;
   }
 
-  // Bluefruit takes 1 second to reboot
-  delay(1000);
+  // Bluefruit takes 1 second to reboot, but do not wait. Just don't use it for 1 second
+  //delay(1000);
 
   return isOK;
 }
@@ -514,7 +514,7 @@ bool Adafruit_BluefruitLE_SPI::getResponse(void)
 
     // It takes a bit since all Data received to IRQ to get LOW
     // May need to delay a bit for it to be stable before the next try
-    // delayMicroseconds(SPI_DEFAULT_DELAY_US);
+    delayMicroseconds(SPI_DEFAULT_DELAY_US);
   }
 
   return true;
@@ -537,7 +537,10 @@ bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
   TimeoutTimer tt(2*_timeout);
   
   while ( !digitalRead(m_irq_pin) ) {
-    if (tt.expired()) return false;
+    if (tt.expired()) {
+        SerialUSB.println("!!");
+        return false;
+    }
   }
   
   sdepMsgHeader_t* p_header = &p_response->header;
@@ -570,14 +573,15 @@ bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
       // Walkaround: Disable & Re-enable CS with a bit of delay and keep waiting
       // TODO IRQ is supposed to be OFF then ON, it is better to use GPIO trigger interrupt.
 
-      SPI_CS_DISABLE();
+      //SPI_CS_DISABLE();
       // wait for the clock to be enabled..
 //      while (!digitalRead(m_irq_pin)) {
 //        if ( tt.expired() ) break;
 //      }
 //      if (!digitalRead(m_irq_pin)) break;
-      delayMicroseconds(SPI_DEFAULT_DELAY_US);
-      SPI_CS_ENABLE();
+      //delayMicroseconds(SPI_DEFAULT_DELAY_US);
+      //SPI_CS_ENABLE();
+        return false;
     }
   }  while (p_header->msg_type == SPI_IGNORED_BYTE || p_header->msg_type == SPI_OVERREAD_BYTE);
 

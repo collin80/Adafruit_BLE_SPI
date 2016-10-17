@@ -34,7 +34,6 @@
 */
 /**************************************************************************/
 #include "Adafruit_BLE.h"
-#include "Adafruit_BLEMIDI.h"
 
 #ifndef min
   #define min(a,b) ((a) < (b) ? (a) : (b))
@@ -117,8 +116,14 @@ bool Adafruit_BLE::reset(void)
   // println();
   for (uint8_t t=0; t < 5; t++) {
     isOK = atcommand(F("ATZ"));
-
-    if (isOK) break;
+    
+    return true;
+    
+    if (isOK) 
+    {
+        flush();
+        return true;
+    }
   }
 
   if (! isOK) {
@@ -136,8 +141,7 @@ bool Adafruit_BLE::reset(void)
     if (!isOK) return false;
   }
 
-  // Bluefruit need 1 second to reboot
-  delay(1000);
+  // Bluefruit need 1 second to reboot, but don't wait. Just keep that in mind
 
   // flush all left over
   flush();
@@ -153,15 +157,15 @@ bool Adafruit_BLE::reset(void)
 bool Adafruit_BLE::factoryReset(void)
 {
   println( F("AT+FACTORYRESET") );
-  bool isOK = waitForOK();
+  //bool isOK = waitForOK();
 
   // Bluefruit need 1 second to reboot
-  delay(1000);
+  //delay(1000);
 
   // flush all left over
-  flush();
+  //flush();
 
-  return isOK;
+  return true;
 }
 
 /******************************************************************************/
@@ -298,37 +302,6 @@ void Adafruit_BLE::update(uint32_t period_ms)
     //--------------------------------------------------------------------+
     if ( this->_connect_callback    && bitRead(system_event, EVENT_SYSTEM_CONNECT   ) ) this->_connect_callback();
     if ( this->_disconnect_callback && bitRead(system_event, EVENT_SYSTEM_DISCONNECT) ) this->_disconnect_callback();
-
-    if ( this->_ble_uart_rx_callback && bitRead(system_event, EVENT_SYSTEM_BLE_UART_RX) )
-    {
-      // _verbose = true;
-      println( F("AT+BLEUARTRX") );
-      uint16_t len = readline(tempbuf, BLE_BUFSIZE);
-      waitForOK();
-
-      this->_ble_uart_rx_callback( (char*) tempbuf, len);
-    }
-
-    if ( this->_ble_midi_rx_callback && bitRead(system_event, EVENT_SYSTEM_BLE_MIDI_RX) )
-    {
-//      _verbose = true;
-      while(1)
-      {
-        // use RAW command version
-        println( F("AT+BLEMIDIRXRAW") );
-
-        // readraw swallow OK/ERROR already
-        uint16_t len = readraw();
-
-        // break if there is no more MIDI event
-        if ( len == 0 ) break;
-
-        // copy to internal buffer for other usage !
-        memcpy(tempbuf, this->buffer, len);
-
-        Adafruit_BLEMIDI::processRxCallback(tempbuf, len, this->_ble_midi_rx_callback);
-      }
-    }
 
     //--------------------------------------------------------------------+
     // Gatt Event
