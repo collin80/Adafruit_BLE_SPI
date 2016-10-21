@@ -82,7 +82,7 @@ void Adafruit_ATParser::bleReply()
 {
     while(available()) {
         char c = read();        
-        SerialUSB.println(c, HEX);
+        //SerialUSB.println(c, HEX);
         if (c == 0xFF) return;
 
         if (c == '\r') {
