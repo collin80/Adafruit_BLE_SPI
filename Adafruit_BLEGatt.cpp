@@ -221,17 +221,18 @@ uint8_t Adafruit_BLEGatt::getChar(uint8_t charID)
   uint8_t current_mode = _ble.getMode();
 
   // switch mode if necessary to execute command
-  if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_COMMAND);
+  //if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_COMMAND);
 
   // use RAW command version
   _ble.print( F("AT+GATTCHARRAW=") );
   _ble.println(charID);
-  uint16_t len = _ble.readraw(); // readraw swallow OK/ERROR already
+  //uint16_t len = _ble.readraw(); // readraw swallow OK/ERROR already
 
   // switch back if necessary
-  if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_DATA);
+  //if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_DATA);
 
-  return len;
+  //return len;
+  return 0;
 }
 
 /******************************************************************************/

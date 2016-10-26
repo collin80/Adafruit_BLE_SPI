@@ -81,11 +81,6 @@ void Adafruit_BLE::install_callback(bool enable, int8_t system_id, int8_t gatts_
   bool v = _verbose;
   _verbose = true;
 
-  uint8_t current_mode = _mode;
-
-  // switch mode if necessary to execute command
-  if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_COMMAND);
-
   print( enable ?  F("AT+EVENTENABLE=0x") : F("AT+EVENTDISABLE=0x") );
   print( (system_id < 0) ? 0 : bit(system_id), HEX );
 
@@ -97,10 +92,7 @@ void Adafruit_BLE::install_callback(bool enable, int8_t system_id, int8_t gatts_
 
   println();
 
-  waitForOK();
-
-  // switch back if necessary
-  if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
+  //waitForOK();
 
   _verbose = v;
 }
@@ -258,77 +250,6 @@ bool Adafruit_BLE::isVersionAtLeast(const char * versionString)
   if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
 
   return result;
-}
-
-/******************************************************************************/
-/*!
-    @brief  Get (multiple) lines of response data into internal buffer.
-
-    @param[in] period_ms
-               period in milliseconds between each event scanning
-    @return    None
-*/
-/******************************************************************************/
-void Adafruit_BLE::update(uint32_t period_ms)
-{
-  static TimeoutTimer tt;
-
-  if ( tt.expired() )
-  {
-    tt.set(period_ms);
-
-    bool v = _verbose;
-    _verbose = false;
-
-    uint8_t current_mode = _mode;
-
-    // switch mode if necessary to execute command
-    if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_COMMAND);
-
-    println( F("AT+EVENTSTATUS") );
-    readline();
-    waitForOK();
-
-    // parse event status system_event, gatts_event
-    uint8_t tempbuf[BLE_BUFSIZE+1];
-    uint32_t system_event, gatts_event;
-    char * p_comma = NULL;
-
-    system_event = strtoul(this->buffer, &p_comma, 16);
-    gatts_event  = strtoul(p_comma+1, NULL, 16);
-
-    //--------------------------------------------------------------------+
-    // System Event
-    //--------------------------------------------------------------------+
-    if ( this->_connect_callback    && bitRead(system_event, EVENT_SYSTEM_CONNECT   ) ) this->_connect_callback();
-    if ( this->_disconnect_callback && bitRead(system_event, EVENT_SYSTEM_DISCONNECT) ) this->_disconnect_callback();
-
-    //--------------------------------------------------------------------+
-    // Gatt Event
-    //--------------------------------------------------------------------+
-    if ( this->_ble_gatt_rx_callback && gatts_event )
-    {
-//      _verbose = true;
-      for(uint8_t charid=1; charid < 30; charid++)
-      {
-        if ( bitRead(gatts_event, charid-1) )
-        {
-          print( F("AT+GATTCHARRAW=") ); // use RAW command version
-          println(charid);
-
-          uint16_t len = readraw(); // readraw swallow OK/ERROR already
-          memcpy(tempbuf, this->buffer, len);
-
-          this->_ble_gatt_rx_callback(charid, tempbuf, len);
-        }
-      }
-    }
-
-    // switch back if necessary
-    if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
-
-    _verbose = v;
-  }
 }
 
 /******************************************************************************/
