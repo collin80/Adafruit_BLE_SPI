@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_ATParser.h
+    @file     ATParser.h
     @author   hathach
 
     @section LICENSE

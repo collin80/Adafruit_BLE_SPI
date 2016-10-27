@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_BluefruitLE_SPI.cpp
+    @file     BluefruitLE_SPI.cpp
     @author   hathach, ktown (Adafruit Industries)
 
     @section LICENSE
@@ -33,7 +33,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /**************************************************************************/
-#include "Adafruit_BluefruitLE_SPI.h"
+#include "BluefruitLE_SPI.h"
 #include <Arduino.h>
 #include <stdlib.h>
 

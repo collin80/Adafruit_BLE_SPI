@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_BLE.c
+    @file     BLE.c
     @author   hathach
 
     @section LICENSE
@@ -33,7 +33,7 @@
     SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /**************************************************************************/
-#include "Adafruit_BLE.h"
+#include "BLE.h"
 
 #ifndef min
   #define min(a,b) ((a) < (b) ? (a) : (b))

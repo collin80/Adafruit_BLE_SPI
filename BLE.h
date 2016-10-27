@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_BLE.h
+    @file     BLE.h
     @author   hathach
 
     @section LICENSE
@@ -42,7 +42,7 @@
 #include "utility/common_header.h"
 #include "utility/errors.h"
 #include "utility/TimeoutTimer.h"
-#include "Adafruit_ATParser.h"
+#include "ATParser.h"
 
 #define BLE_DEFAULT_TIMEOUT      250
 

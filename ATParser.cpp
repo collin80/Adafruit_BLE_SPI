@@ -34,7 +34,7 @@
 */
 /**************************************************************************/
 
-#include "Adafruit_ATParser.h"
+#include "ATParser.h"
 
 Adafruit_ATParser *ref;
 

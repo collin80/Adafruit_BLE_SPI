@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_BLEGatt.h
+    @file     BLEGatt.h
     @author   hathach
 
     @section LICENSE
@@ -38,7 +38,7 @@
 #define _ADAFRUIT_BLEGATT_H_
 
 #include <Arduino.h>
-#include "Adafruit_BLE.h"
+#include "BLE.h"
 
 #define GATT_CHARS_PROPERTIES_BROADCAST       bit(0)
 #define GATT_CHARS_PROPERTIES_READ            bit(1)

@@ -1,6 +1,6 @@
 /**************************************************************************/
 /*!
-    @file     Adafruit_BluefruiLE_SPI.h
+    @file     BluefruiLE_SPI.h
     @author   hathach, ktown (Adafruit Industries)
 
     @section LICENSE
@@ -36,7 +36,7 @@
 #ifndef _ADAFRUIT_BLE_SPI_H_
 #define _ADAFRUIT_BLE_SPI_H_
 
-#include <Adafruit_BLE.h>
+#include <BLE.h>
 #include <SPI.h>
 #include "utility/Adafruit_FIFO.h"
 
