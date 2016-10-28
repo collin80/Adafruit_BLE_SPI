@@ -83,7 +83,10 @@ void Adafruit_ATParser::bleReply()
     while(available()) {
         char c = read();        
         //SerialUSB.println(c, HEX);
-        if (c == 0xFF) return;
+        if (c == 0xFF) {
+            replyBuffer[replyBuffIdx] = 0; //just to be sure the string is terminated in case someone tries to use it
+            return;
+        }
 
         if (c == '\r') {
             replyBuffer[replyBuffIdx] = 0; //null terminate string
@@ -139,26 +142,6 @@ bool Adafruit_ATParser::isCmdOK()
 Adafruit_ATParser *Adafruit_ATParser::getRef()
 {
     return ref;
-}
-
-/******************************************************************************/
-/*!
-    @brief  Read the whole response and check if it ended up with OK.
-    @return true if a reply came back (reply stored in lastCommandOK) false if no reply yet.
-*/
-/******************************************************************************/
-bool Adafruit_ATParser::waitForOK(void)
-{
-  if (_verbose) SerialDebug.print( F("\n<- ") );
-
-  while ( readline(replyBuffer, BLE_BUFSIZE) ) {
-    if ( strcmp(replyBuffer, "OK") == 0 ) return true;
-    if ( strcmp(replyBuffer, "ERROR") == 0 ) return false;
-
-    // Copy to internal buffer if not OK or ERROR
-    strcpy(this->buffer, replyBuffer);
-  }
-  return false;
 }
 
 /******************************************************************************/
@@ -223,12 +206,11 @@ bool Adafruit_ATParser::send_arg_get_resp(int32_t* reply, uint8_t argcount, uint
   if (reply)
   {
     if (_verbose) SerialDebug.print( F("\n<- ") );
-    (*reply) = readline_parseInt();
+    //(*reply) = readline_parseInt();
   }
 
   // check OK or ERROR status
   waitingForReply = true;
-  //return waitForOK();
   return true;
 }
 
@@ -278,151 +260,6 @@ bool Adafruit_ATParser::atcommand_full(const __FlashStringHelper *cmd, int32_t* 
   if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
 
   return result;
-}
-
-/******************************************************************************/
-/*!
-    @brief  Get a line of response data (see \ref readline) and try to interpret
-            it to an integer number. If the number is prefix with '0x', it will
-            be interpreted as hex number. This function also drop the rest of
-            data to the end of the line.
-*/
-/******************************************************************************/
-int32_t Adafruit_ATParser::readline_parseInt(void)
-{
-  uint16_t len = readline();
-  if (len == 0) return 0;
-
-  // also parsed hex number e.g 0xADAF
-  int32_t val = strtol(buffer, NULL, 0);
-
-  return val;
-}
-
-/******************************************************************************/
-/*!
-    @brief  Get a line of response data into provided buffer.
-
-    @param[in] buf Provided buffer
-    @param[in] bufsize buffer size
-    @param[in] timeout timeout in milliseconds
-    @param[in] multiline Read multiple line if true, otherwise only read 1 line
-
-    @note '\r' and '\n' are not included in returned buffer.
-*/
-/******************************************************************************/
-uint16_t Adafruit_ATParser::readline(char * buf, uint16_t bufsize, uint16_t timeout, boolean multiline)
-{
-
-  //while (timeout--) {
-    while(available()) {
-      char c = read();
-      //SerialDebug.println(c);
-
-      if (c == '\r') continue;
-
-      if (c == '\n') {
-        // the first '\n' is ignored
-        if (replyBuffIdx == 0) continue;
-
-        if (!multiline) {
-          timeout = 0;
-          break;
-        }
-      }
-      buf[replyBuffIdx] = c;
-      replyBuffIdx++;
-
-      // Buffer is full
-      if (replyBuffIdx >= bufsize) {
-        //if (_verbose) { SerialDebug.println("*overflow*"); }  // for my debuggin' only!
-        timeout = 0;
-        break;
-      }
-    }
-
-    // delay if needed
-    //if (timeout) delay(1);
- // }
-
-  buf[replyBuffIdx] = 0;  // null term
-
-  // Print out if is verbose
-  if (_verbose && replyBuffIdx > 0)
-  {
-    SerialDebug.print(buf);
-    if (replyBuffIdx < bufsize) SerialDebug.println();
-  }
-  
-  int tempIdx = replyBuffIdx;
-  replyBuffIdx = 0;
-  return tempIdx;
-}
-
-/******************************************************************************/
-/*!
-    @brief  Get raw binary data to internal buffer, only stop when encountering
-            either "OK\r\n" or "ERROR\r\n" or timed out. Buffer does not contain
-            OK or ERROR
-
-    @param[in] timeout
-               Timeout for each read() operation
-
-    @return    The number of bytes read excluding OK, ERROR ending.
-               0 usually means error
-*/
-/******************************************************************************/
-uint16_t Adafruit_ATParser::readraw(uint16_t timeout)
-{
-  uint16_t replyidx = 0;
-
-  //while (timeout--) {
-    while(available()) {
-      char c =  read();
-
-      if (c == '\n')
-      {
-        // done if ends with "OK\r\n"
-        if ( (replyidx >= 3) && !strncmp(this->buffer + replyidx-3, "OK\r", 3) )
-        {
-          replyidx -= 3; // chop OK\r
-          timeout = 0;
-          break;
-        }
-        // done if ends with "ERROR\r\n"
-        else if ((replyidx >= 6) && !strncmp(this->buffer + replyidx-6, "ERROR\r", 6))
-        {
-          replyidx -= 6; // chop ERROR\r
-          timeout = 0;
-          break;
-        }
-      }
-
-      this->buffer[replyidx] = c;
-      replyidx++;
-
-      // Buffer is full
-      if (replyidx >= BLE_BUFSIZE) {
-        //if (_verbose) { SerialDebug.println("*overflow*"); }  // for my debuggin' only!
-        timeout = 0;
-        break;
-      }
-    }
-
-    //if (timeout == 0) break;
-    //delay(1);
-  //}
-  
-  this->buffer[replyidx] = 0;  // null term
-
-  // Print out if is verbose
-//  if (_verbose && replyidx > 0)
-//  {
-//    SerialDebug.print(buffer);
-//    if (replyidx < BLE_BUFSIZE) SerialDebug.println();
-//  }
-
-  return replyidx;
 }
 
 /******************************************************************************/

@@ -44,7 +44,7 @@
 #include "utility/TimeoutTimer.h"
 #include "ATParser.h"
 
-#define BLE_DEFAULT_TIMEOUT      250
+#define BLE_DEFAULT_TIMEOUT      70
 
 enum BLEDataType_t
 {

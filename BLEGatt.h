@@ -78,37 +78,6 @@ public:
 
   //------------- Get Characteristic -------------//
   uint8_t  getChar(uint8_t charID);
-  uint8_t  getChar(uint8_t charID, uint8_t* buf, uint8_t bufsize);
-
-  uint8_t  getCharInt8(uint8_t charID)
-  {
-    if ( this->getChar(charID) < sizeof(uint8_t) ) return 0;
-    uint8_t result;
-    memcpy(&result, this->buffer, sizeof(result));
-    return result;
-  }
-
-  uint16_t getCharInt16(uint8_t charID)
-  {
-    if ( this->getChar(charID) < sizeof(uint16_t) ) return 0;
-    uint16_t result;
-    memcpy(&result, this->buffer, sizeof(result));
-    return result;
-  }
-
-  uint32_t getCharInt32(uint8_t charID)
-  {
-    if ( this->getChar(charID) < sizeof(uint32_t) ) return 0;
-    uint32_t result;
-    memcpy(&result, this->buffer, sizeof(result));
-    return result;
-  }
-
-  char*    getCharStr(uint8_t charID)
-  {
-    if ( this->getChar(charID) == 0 ) return NULL;
-    return this->buffer;
-  }
 
   //------------- Set Characteristic -------------//
   bool    setChar(uint8_t charID, uint8_t const data[], uint8_t size);

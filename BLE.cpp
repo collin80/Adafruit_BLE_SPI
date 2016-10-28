@@ -92,8 +92,6 @@ void Adafruit_BLE::install_callback(bool enable, int8_t system_id, int8_t gatts_
 
   println();
 
-  //waitForOK();
-
   _verbose = v;
 }
 
@@ -106,39 +104,9 @@ bool Adafruit_BLE::reset(void)
 {
   bool isOK;
   // println();
-  for (uint8_t t=0; t < 5; t++) {
-    isOK = atcommand(F("ATZ"));
+  isOK = atcommand(F("ATZ"));
     
-    return true;
-    
-    if (isOK) 
-    {
-        flush();
-        return true;
-    }
-  }
-
-  if (! isOK) {
-    // ok we're going to get desperate
-    delay(50);
-    setMode(BLUEFRUIT_MODE_COMMAND);
-    delay(50);
-    
-    for (uint8_t t=0; t < 5; t++) {
-      isOK = atcommand(F("ATZ"));
-      
-      if (isOK) break;
-    }
-
-    if (!isOK) return false;
-  }
-
-  // Bluefruit need 1 second to reboot, but don't wait. Just keep that in mind
-
-  // flush all left over
-  flush();
-
-  return isOK;
+  return true;    
 }
 
 /******************************************************************************/
@@ -149,13 +117,8 @@ bool Adafruit_BLE::reset(void)
 bool Adafruit_BLE::factoryReset(void)
 {
   println( F("AT+FACTORYRESET") );
-  //bool isOK = waitForOK();
-
-  // Bluefruit need 1 second to reboot
-  //delay(1000);
-
-  // flush all left over
-  //flush();
+  
+  flush();
 
   return true;
 }
@@ -214,11 +177,6 @@ void Adafruit_BLE::info(void)
 
   println(F("ATI"));
 
-  while ( readline() ) {
-    if ( !strcmp(buffer, "OK") || !strcmp(buffer, "ERROR")  ) break;
-    SerialDebug.println(buffer);
-  }
-
   // switch back if necessary
   if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
 
@@ -242,14 +200,10 @@ bool Adafruit_BLE::isVersionAtLeast(const char * versionString)
   // requesting version number
   println(F("ATI=4"));
 
-  readline();
-  bool result = ( strcmp(buffer, versionString) >= 0 );
-  waitForOK();
-
   // switch back if necessary
   if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);
 
-  return result;
+  return true;
 }
 
 /******************************************************************************/
@@ -337,11 +291,6 @@ bool Adafruit_BLE::readNVM(uint16_t offset, uint8_t data[], uint16_t size)
 
   print(',');
   println(size);
-
-  uint16_t len = readraw(); // readraw swallow OK/ERROR already
-
-  // skip if NULL is entered
-  if (data) memcpy(data, this->buffer, min(size, BLE_BUFSIZE));
 
   // switch back if necessary
   if ( current_mode == BLUEFRUIT_MODE_DATA ) setMode(BLUEFRUIT_MODE_DATA);

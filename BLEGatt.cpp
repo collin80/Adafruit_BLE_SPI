@@ -67,8 +67,8 @@ bool Adafruit_BLEGatt::clear(void)
 uint8_t Adafruit_BLEGatt::addService(uint16_t uuid16)
 {
   int32_t service_id;
-  VERIFY_RETURN_( _ble.atcommandIntReply( F("AT+GATTADDSERVICE=UUID"), &service_id, uuid16), 0 );
-  return (uint8_t) service_id;
+  _ble.atcommandIntReply( F("AT+GATTADDSERVICE=UUID"), &service_id, uuid16);
+  return (uint8_t) 1; //we don't know the service number right now...
 }
 
 /******************************************************************************/
@@ -80,8 +80,8 @@ uint8_t Adafruit_BLEGatt::addService(uint16_t uuid16)
 uint8_t Adafruit_BLEGatt::addService(uint8_t uuid128[])
 {
   int32_t service_id;
-  VERIFY_RETURN_( _ble.atcommandIntReply( F("AT+GATTADDSERVICE=UUID128"), &service_id, uuid128, 16), 0 );
-  return (uint8_t) service_id;
+  _ble.atcommandIntReply( F("AT+GATTADDSERVICE=UUID128"), &service_id, uuid128, 16);
+  return (uint8_t) 1;
 }
 
 /******************************************************************************/
@@ -144,15 +144,10 @@ uint8_t Adafruit_BLEGatt::addChar_internal(uint8_t uuid[], uint8_t uuid_len, uin
 
   _ble.println(); // execute command
 
-//  if (_verbose) SerialDebug.print( F("\n<- ") );
-  chars_id = _ble.readline_parseInt();
-
-  isOK = _ble.waitForOK();
-
   // switch back if necessary
   if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_DATA);
 
-  return isOK ? chars_id : 0;
+  return true;
 }
 
 /******************************************************************************/
@@ -226,7 +221,6 @@ uint8_t Adafruit_BLEGatt::getChar(uint8_t charID)
   // use RAW command version
   _ble.print( F("AT+GATTCHARRAW=") );
   _ble.println(charID);
-  //uint16_t len = _ble.readraw(); // readraw swallow OK/ERROR already
 
   // switch back if necessary
   //if ( current_mode == BLUEFRUIT_MODE_DATA ) _ble.setMode(BLUEFRUIT_MODE_DATA);
@@ -235,21 +229,3 @@ uint8_t Adafruit_BLEGatt::getChar(uint8_t charID)
   return 0;
 }
 
-/******************************************************************************/
-/*!
-    @brief Read Characteristics value to user's buffer
-    @param charID Characteristics ID
-    @param buf buffer to hold data
-    @param bufsize size of buffer
-    @return number of bytes copied to buffer (up to bufsize).
-            0 usually means error.
-*/
-/******************************************************************************/
-uint8_t Adafruit_BLEGatt::getChar(uint8_t charID, uint8_t* buf, uint8_t bufsize)
-{
-  uint8_t len = this->getChar(charID);
-  len = min(len, bufsize);
-  memcpy(buf, _ble.buffer, len);
-
-  return len;
-}
