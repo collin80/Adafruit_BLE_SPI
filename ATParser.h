@@ -94,6 +94,7 @@ public:
   char buffer[BLE_BUFSIZE+1];
   char replyBuffer[BLE_BUFSIZE+1];
   int replyBuffIdx;
+  bool interruptFlag;
   
   bool isWaitingForReply();
   bool isCmdOK();
@@ -101,6 +102,7 @@ public:
   void bleReply();
   boolean attachObj(BLEListener *listener);
   void detachObj();
+  void pollInterruptFlag();
 
   uint8_t      getMode(void) { return _mode; }
   virtual bool setMode(uint8_t mode) = 0;

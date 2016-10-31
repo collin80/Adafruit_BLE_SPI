@@ -533,104 +533,79 @@ bool Adafruit_BluefruitLE_SPI::getResponse(void)
 /******************************************************************************/
 bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
 {
-  // Wait until IRQ is asserted, double timeout since some commands take long time to start responding
-  TimeoutTimer tt(2*_timeout);
+  // There used to be code here to wait for the interrupt line. But, now the library 
+  // pretty well only gets here because the interrupt line already triggered so no need to check.
   
-  while ( !digitalRead(m_irq_pin) ) {
-    if (tt.expired()) {
-        SerialUSB.println("!!");
-        return false;
-    }
-  }
+    sdepMsgHeader_t* p_header = &p_response->header;
+
+    if (m_sck_pin == -1) SPI.beginTransaction(bluefruitSPI);
+    SPI_CS_ENABLE();
+
+    for (int cc = 0; cc < 3; cc++) {
+        p_header->msg_type = spixfer(0xff);
+
+        if (p_header->msg_type == SPI_IGNORED_BYTE)
+        {
+            // Bluefruit may not be ready
+            // Disable & Re-enable CS with a bit of delay for Bluefruit to ready itself
+            SPI_CS_DISABLE();
+            delayMicroseconds(SPI_DEFAULT_DELAY_US);
+            SPI_CS_ENABLE();
+        }
+        else if (p_header->msg_type == SPI_OVERREAD_BYTE)
+        {
+            return false; //shouldn't happen but just abort if it does
+        }
+        else break;
+        delayMicroseconds(150);
+    }  
   
-  sdepMsgHeader_t* p_header = &p_response->header;
+    bool result=false;
 
-  if (m_sck_pin == -1)
-    SPI.beginTransaction(bluefruitSPI);
-  SPI_CS_ENABLE();
-
-  tt.set(_timeout);
-
-  do {
-    if ( tt.expired() ) break;
-
-    p_header->msg_type = spixfer(0xff);
-
-    if (p_header->msg_type == SPI_IGNORED_BYTE)
+    // Not a loop, just a way to avoid goto with error handling
+    do
     {
-      // Bluefruit may not be ready
-      // Disable & Re-enable CS with a bit of delay for Bluefruit to ready itself
-      SPI_CS_DISABLE();
-      delayMicroseconds(SPI_DEFAULT_DELAY_US);
-      SPI_CS_ENABLE();
-    }
-    else if (p_header->msg_type == SPI_OVERREAD_BYTE)
-    {
-      // IRQ may not be pulled down by Bluefruit when returning all data in previous transfer.
-      // This could happen when Arduino MCU is running at fast rate comparing to Bluefruit's MCU,
-      // causing an SPI_OVERREAD_BYTE to be returned at stage.
-      //
-      // Walkaround: Disable & Re-enable CS with a bit of delay and keep waiting
-      // TODO IRQ is supposed to be OFF then ON, it is better to use GPIO trigger interrupt.
-
-      //SPI_CS_DISABLE();
-      // wait for the clock to be enabled..
-//      while (!digitalRead(m_irq_pin)) {
-//        if ( tt.expired() ) break;
-//      }
-//      if (!digitalRead(m_irq_pin)) break;
-      //delayMicroseconds(SPI_DEFAULT_DELAY_US);
-      //SPI_CS_ENABLE();
-        return false;
-    }
-  }  while (p_header->msg_type == SPI_IGNORED_BYTE || p_header->msg_type == SPI_OVERREAD_BYTE);
-
-  bool result=false;
-
-  // Not a loop, just a way to avoid goto with error handling
-  do
-  {
-    // Look for the header
-    // note that we should always get the right header at this point, and not doing so will really mess up things.
-    while ( p_header->msg_type != SDEP_MSGTYPE_RESPONSE && p_header->msg_type != SDEP_MSGTYPE_ERROR && !tt.expired() )
-    {
-      p_header->msg_type = spixfer(0xff);
-    }
+        // Look for the header
+        // note that we should always get the right header at this point, and not doing so will really mess up things.
+        for (int cc = 0; cc < 3; cc++) {
+            if (p_header->msg_type == SDEP_MSGTYPE_RESPONSE || p_header->msg_type == SDEP_MSGTYPE_ERROR) break;
+            delayMicroseconds(SPI_DEFAULT_DELAY_US);
+            p_header->msg_type = spixfer(0xff);
+        }
     
-    if ( tt.expired() ) break;
+        if (p_header->msg_type != SDEP_MSGTYPE_RESPONSE && p_header->msg_type != SDEP_MSGTYPE_ERROR) return false;
     
-    memset( (&p_header->msg_type)+1, 0xff, sizeof(sdepMsgHeader_t) - 1);
-    spixfer((&p_header->msg_type)+1, sizeof(sdepMsgHeader_t) - 1);
+        memset( (&p_header->msg_type)+1, 0xff, sizeof(sdepMsgHeader_t) - 1);
+        spixfer((&p_header->msg_type)+1, sizeof(sdepMsgHeader_t) - 1);
 
-    // Command is 16-bit at odd address, may have alignment issue with 32-bit chip
-    uint16_t cmd_id = word(p_header->cmd_id_high, p_header->cmd_id_low);
+        // Command is 16-bit at odd address, may have alignment issue with 32-bit chip
+        uint16_t cmd_id = word(p_header->cmd_id_high, p_header->cmd_id_low);
 
-    // Error Message Response
-    if ( p_header->msg_type == SDEP_MSGTYPE_ERROR ) break;
+        // Error Message Response
+        if ( p_header->msg_type == SDEP_MSGTYPE_ERROR ) break;
 
-    // Invalid command
-    if (!(cmd_id == SDEP_CMDTYPE_AT_WRAPPER ||
-          cmd_id == SDEP_CMDTYPE_BLE_UARTTX ||
-          cmd_id == SDEP_CMDTYPE_BLE_UARTRX) )
-    {
-      break;
-    }
+        // Invalid command
+        if (!(cmd_id == SDEP_CMDTYPE_AT_WRAPPER ||
+            cmd_id == SDEP_CMDTYPE_BLE_UARTTX ||
+            cmd_id == SDEP_CMDTYPE_BLE_UARTRX) )
+        {
+            break;
+        }
 
-    // Invalid length
-    if(p_header->length > SDEP_MAX_PACKETSIZE) break;
+        // Invalid length
+        if(p_header->length > SDEP_MAX_PACKETSIZE) break;
 
-    // read payload
-    memset(p_response->payload, 0xff, p_header->length);
-    spixfer(p_response->payload, p_header->length);
+        // read payload
+        memset(p_response->payload, 0xff, p_header->length);
+        spixfer(p_response->payload, p_header->length);
 
-    result = true;
-  }while(0);
+        result = true;
+    }while(0);
 
-  SPI_CS_DISABLE();
-  if (m_sck_pin == -1)
-    SPI.endTransaction();
+    SPI_CS_DISABLE();
+    if (m_sck_pin == -1) SPI.endTransaction();
 
-  return result;
+    return result;
 }
 
 /******************************************************************************/

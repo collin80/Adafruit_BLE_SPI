@@ -57,11 +57,12 @@ Adafruit_ATParser::Adafruit_ATParser(void)
   replyBuffIdx = 0;
   ref = this;
   listener = NULL;
+  interruptFlag = false;
 }
 
 void gotBLEReply()
 {
-    Adafruit_ATParser::getRef()->bleReply();
+    Adafruit_ATParser::getRef()->interruptFlag = true;
 }
 
 boolean Adafruit_ATParser::attachObj(BLEListener *listener)
@@ -78,9 +79,18 @@ void Adafruit_ATParser::detachObj()
     flush();
 }
 
+void Adafruit_ATParser::pollInterruptFlag()
+{
+    if (interruptFlag) {
+        interruptFlag = false;
+        bleReply();
+    }
+}
+
 void Adafruit_ATParser::bleReply()
 {
     while(available()) {
+        //SerialUSB.write('-');
         char c = read();        
         //SerialUSB.println(c, HEX);
         if (c == 0xFF) {
