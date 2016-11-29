@@ -42,7 +42,7 @@
 #endif
 
 
-SPISettings bluefruitSPI(4000000, MSBFIRST, SPI_MODE0);
+SPISettings bluefruitSPI(3000000, MSBFIRST, SPI_MODE0);
 
 
 /******************************************************************************/
@@ -230,49 +230,52 @@ bool Adafruit_BluefruitLE_SPI::sendInitializePattern(void)
 /******************************************************************************/
 bool Adafruit_BluefruitLE_SPI::sendPacket(uint16_t command, const uint8_t* buf, uint8_t count, uint8_t more_data)
 {
-  // flush old response before sending the new command
-  if (more_data == 0) flush();
+    bool result = false;
+    
+    // flush old response before sending the new command
+    if (more_data == 0) flush();
 
-  sdepMsgCommand_t msgCmd;
+    sdepMsgCommand_t msgCmd;
 
-  msgCmd.header.msg_type    = SDEP_MSGTYPE_COMMAND;
-  msgCmd.header.cmd_id_high = highByte(command);
-  msgCmd.header.cmd_id_low  = lowByte(command);
-  msgCmd.header.length      = count;
-  msgCmd.header.more_data   = (count == SDEP_MAX_PACKETSIZE) ? more_data : 0;
+    msgCmd.header.msg_type    = SDEP_MSGTYPE_COMMAND;
+    msgCmd.header.cmd_id_high = highByte(command);
+    msgCmd.header.cmd_id_low  = lowByte(command);
+    msgCmd.header.length      = count;
+    msgCmd.header.more_data   = (count == SDEP_MAX_PACKETSIZE) ? more_data : 0;
 
-  // Copy payload
-  if ( buf != NULL && count > 0) memcpy(msgCmd.payload, buf, count);
+    // Copy payload
+    if ( buf != NULL && count > 0) memcpy(msgCmd.payload, buf, count);
 
-  // Starting SPI transaction
-  if (m_sck_pin == -1)
-    SPI.beginTransaction(bluefruitSPI);
+    // Starting SPI transaction
+    if (m_sck_pin == -1)
+        SPI.beginTransaction(bluefruitSPI);
 
-  SPI_CS_ENABLE();
-
-  TimeoutTimer tt(_timeout);
-
-  // Bluefruit may not be ready
-  while ( ( spixfer(msgCmd.header.msg_type) == SPI_IGNORED_BYTE ) && !tt.expired() )
-  {
-    // Disable & Re-enable CS with a bit of delay for Bluefruit to ready itself
-    SPI_CS_DISABLE();
-    delayMicroseconds(SPI_DEFAULT_DELAY_US);
     SPI_CS_ENABLE();
-  }
+    delayMicroseconds(100);
 
-  bool result = !tt.expired();
-  if ( result )
-  {
-    // transfer the rest of the data
-    spixfer((void*) (((uint8_t*)&msgCmd) +1), sizeof(sdepMsgHeader_t)+count-1);
-  }
+    // Bluefruit may not be ready
+    for (int cc = 0; cc < 10; cc++) {
+        if (spixfer(msgCmd.header.msg_type) != SPI_IGNORED_BYTE) {
+            result = true;
+            break;
+        }
+        // Disable & Re-enable CS with a bit of delay for Bluefruit to ready itself
+        SPI_CS_DISABLE();
+        delayMicroseconds(SPI_DEFAULT_DELAY_US);
+        SPI_CS_ENABLE();
+        delayMicroseconds(100);
+    }
 
-  SPI_CS_DISABLE();
-  if (m_sck_pin == -1)
-    SPI.endTransaction();
+    if ( result )
+    {
+        // transfer the rest of the data
+        spixfer((void*) (((uint8_t*)&msgCmd) +1), sizeof(sdepMsgHeader_t)+count-1);
+    }
 
-  return result;
+    SPI_CS_DISABLE();
+    if (m_sck_pin == -1) SPI.endTransaction();
+
+    return result;
 }
 
 /******************************************************************************/
@@ -540,8 +543,9 @@ bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
 
     if (m_sck_pin == -1) SPI.beginTransaction(bluefruitSPI);
     SPI_CS_ENABLE();
+    delayMicroseconds(110);
 
-    for (int cc = 0; cc < 3; cc++) {
+    for (int cc = 0; cc < 30; cc++) {
         p_header->msg_type = spixfer(0xff);
 
         if (p_header->msg_type == SPI_IGNORED_BYTE)
@@ -557,7 +561,7 @@ bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
             return false; //shouldn't happen but just abort if it does
         }
         else break;
-        delayMicroseconds(150);
+        delayMicroseconds(SPI_DEFAULT_DELAY_US);
     }  
   
     bool result=false;
@@ -567,7 +571,7 @@ bool Adafruit_BluefruitLE_SPI::getPacket(sdepMsgResponse_t* p_response)
     {
         // Look for the header
         // note that we should always get the right header at this point, and not doing so will really mess up things.
-        for (int cc = 0; cc < 3; cc++) {
+        for (int cc = 0; cc < 30; cc++) {
             if (p_header->msg_type == SDEP_MSGTYPE_RESPONSE || p_header->msg_type == SDEP_MSGTYPE_ERROR) break;
             delayMicroseconds(SPI_DEFAULT_DELAY_US);
             p_header->msg_type = spixfer(0xff);

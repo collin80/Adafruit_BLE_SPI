@@ -54,8 +54,7 @@ class Adafruit_BluefruitLE_SPI : public Adafruit_BLE
 {
   private:
     // Hardware Pin
-    int8_t          m_cs_pin;
-    int8_t          m_irq_pin;
+    int8_t          m_cs_pin;    
     int8_t          m_rst_pin;
 
     // software SPI pins

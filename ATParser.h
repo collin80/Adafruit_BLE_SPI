@@ -84,6 +84,7 @@ protected:
   bool waitingForReply;
   bool lastCommandOK;
   BLEListener *listener;
+  int8_t          m_irq_pin;
 
   // internal function
   bool send_arg_get_resp(int32_t* reply, uint8_t argcount, uint16_t argtype[], uint32_t args[]);

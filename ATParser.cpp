@@ -68,13 +68,13 @@ void gotBLEReply()
 boolean Adafruit_ATParser::attachObj(BLEListener *listener)
 {
     this->listener = listener;
-    attachInterrupt(digitalPinToInterrupt(27), gotBLEReply, RISING);
+    attachInterrupt(digitalPinToInterrupt(m_irq_pin), gotBLEReply, RISING);
     flush();
 }
 
 void Adafruit_ATParser::detachObj()
 {
-    detachInterrupt(digitalPinToInterrupt(27));
+    detachInterrupt(digitalPinToInterrupt(m_irq_pin));
     this->listener = 0;
     flush();
 }
