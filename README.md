@@ -1,5 +1,11 @@
 This library is for all nRF51 based Adafruit Bluefruit LE modules that use SPI or UART.
 
+The master branch of this library is used for the master branch of GEVCU6. 
+
+The development branch of this library is required for the DEV branch of GEVCU6.
+
+Using the wrong version will cause compilation failure.
+
 Current nRF51 based Bluefruit LE products include:
 
 * [Bluefruit LE Friend](https://www.adafruit.com/product/2267)
